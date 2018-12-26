@@ -4,7 +4,7 @@
 # <a id='import'></a>
 # #### 1. Import
 
-# In[50]:
+# In[67]:
 
 
 import pandas as pd
@@ -26,50 +26,50 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder,LabelBinarizer
 
 
-# In[73]:
+# In[68]:
 
 
 from sklearn.preprocessing import StandardScaler
 
 
-# In[51]:
+# In[69]:
 
 
 import os
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 
-# In[52]:
+# In[70]:
 
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-# In[57]:
+# In[71]:
 
 
-df = pd.read_csv('sampledata.csv')
+df = pd.read_csv('sampledata.csv',nrows=100000)
 
 
-# In[58]:
+# In[72]:
 
 
 df.shape
-df.drop(['CSP location','CustomerName','RefNumber'], axis=1, inplace=True)
+df.drop(['CSP location','CustomerName','RefNumber','TxnStatus'], axis=1, inplace=True)
 df.fillna(0, inplace=True)
 
 
-# In[59]:
+# In[73]:
 
 
 df['AuditStatus'] = df['AuditStatus'].replace(to_replace={'.*Fraud.*': '1'}, regex=True)
 df.AuditStatus = pd.to_numeric(df.AuditStatus, errors='coerce')
 
-df['TxnStatus'] = df['TxnStatus'].replace(to_replace={'.*Success.*': '1'}, regex=True)
-df['TxnStatus'] = df['TxnStatus'].replace(to_replace={'.*Failure.*': '1'}, regex=True)
+#df['TxnStatus'] = df['TxnStatus'].replace(to_replace={'.*Success.*': '1'}, regex=True)
+#df['TxnStatus'] = df['TxnStatus'].replace(to_replace={'.*Failure.*': '1'}, regex=True)
 
-df.TxnStatus = pd.to_numeric(df.TxnStatus, errors='coerce')
+#df.TxnStatus = pd.to_numeric(df.TxnStatus, errors='coerce')
 
 df.columns = df.columns.str.replace(' ', '')
 print('Before')
@@ -94,7 +94,7 @@ print(df.head())
 # ##### 2.1. Which types of transactions are fraudulent? 
 # 
 
-# In[60]:
+# In[74]:
 
 
 print('\n The types of transactions tagged as Fraud Transaction are {}'.format(list(df.loc[df.AuditStatus == 1].TxnType.drop_duplicates().values))) # only 'CASH_OUT' 
@@ -110,7 +110,7 @@ print ('\n The number of fraud transactions = {}'.      format(len(dfFraudTxns))
 # ##### 2.2. What is min and max amount in Fraud Transactions? 
 # 
 
-# In[61]:
+# In[75]:
 
 
 
@@ -122,7 +122,7 @@ print('\nMax amount transacted in Fraud Transactions = {}'                      
 # <a id='clean'></a>
 # #### 3. Data cleaning
 
-# In[62]:
+# In[76]:
 
 
 #X = df.loc[(df.TxnType in FTs)]
@@ -143,7 +143,7 @@ del X['AuditStatus']
 #X.type = X.type.astype(int) # convert dtype('O') to dtype(int)
 
 
-# In[74]:
+# In[77]:
 
 
 df['scaled_Amount'] = StandardScaler().fit_transform(df['Amount'].values.reshape(-1,1))
@@ -154,7 +154,7 @@ df['scaled_JournalNo'] = StandardScaler().fit_transform(df['JournalNo'].values.r
 # <a id='visualization'></a>
 # #### 4. Data visualization
 
-# In[63]:
+# In[78]:
 
 
 limit1 = len(X)
@@ -167,7 +167,7 @@ print('\nTotal transactions = {}'                                  .format(limit
 # <a id='visualization'></a>
 # #### 4. Data visualization
 
-# In[64]:
+# In[79]:
 
 
 print("Txns as pie chart:")
@@ -177,20 +177,14 @@ plt.axis('equal')
 plt.ylabel('')
 
 
-# In[65]:
-
-
-sns.pairplot(df.sample(1000),hue = 'TxnType')
-
-
-# In[75]:
+# In[82]:
 
 
 corr = df.loc[:,df.dtypes == 'float64'].corr()
 sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns, cmap=sns.diverging_palette(220, 10, as_cmap=True))
 
 
-# In[76]:
+# In[83]:
 
 
 fig, (ax3,ax4) = plt.subplots(2,1, figsize = (6,3), sharex = True)
@@ -208,7 +202,7 @@ ax4.set_ylabel('# transactions')
 # <a id='naivebayes'></a>
 # ####  Using Gaussian Naive Bayes
 
-# In[77]:
+# In[84]:
 
 
 def split_data(df, drop_list):
@@ -227,7 +221,7 @@ def split_data(df, drop_list):
     return X_train, X_test, y_train, y_test
 
 
-# In[78]:
+# In[85]:
 
 
 def get_predictions(clf, X_train, y_train, X_test):
@@ -245,7 +239,7 @@ def get_predictions(clf, X_train, y_train, X_test):
     return y_pred, y_pred_prob
 
 
-# In[79]:
+# In[86]:
 
 
 def print_scores(y_test,y_pred,y_pred_prob):
@@ -257,7 +251,7 @@ def print_scores(y_test,y_pred,y_pred_prob):
     print("ROC AUC: {}".format(roc_auc_score(y_test, y_pred_prob[:,1])))
 
 
-# In[80]:
+# In[87]:
 
 
 drop_list = []
@@ -266,17 +260,30 @@ y_pred, y_pred_prob = get_predictions(GaussianNB(), X_train, y_train, X_test)
 print_scores(y_test,y_pred,y_pred_prob)
 
 
-# In[89]:
+# In[88]:
 
 
 # Case-NB-2 : drop some of principle components that have similar distributions in above plots 
-drop_list = ['TerminalID','JournalNo','TerminalID','Amount','JournalNo','TxnStatus','scaled_TerminalID','scaled_JournalNo']
+drop_list = ['TerminalID','JournalNo','TerminalID','Amount','JournalNo','scaled_TerminalID','scaled_JournalNo','FromAccount','ToAccount','TxnDateTime']
+
+#  one hot encoding of columns 
+csp_code = pd.get_dummies(df['CSPCode'])
+txn_type = pd.get_dummies(df['TxnType'])
+
+# Drop columns as it is now encoded
+df = df.drop('CSPCode',axis = 1)
+df = df.drop('TxnType',axis = 1)
+
+# Join the encoded df
+df = df.join(csp_code)
+#df = df.join(txn_type)
+
 X_train, X_test, y_train, y_test = split_data(df, drop_list)
 y_pred, y_pred_prob = get_predictions(GaussianNB(), X_train, y_train, X_test)
 print_scores(y_test,y_pred,y_pred_prob)
 
 
-# In[90]:
+# In[89]:
 
 
 # let us check recall score for logistic regression
@@ -286,7 +293,7 @@ y_pred, y_pred_prob = get_predictions(LogisticRegression(C = 0.01, penalty = 'l1
 print_scores(y_test,y_pred,y_pred_prob)
 
 
-# In[91]:
+# In[90]:
 
 
 # get indices for fraud and genuine classes 
@@ -308,7 +315,7 @@ print("% genuine transactions: ",len(undersample_df[undersample_df.AuditStatus =
 print("% fraud transactions: ", sum(y_undersample)/len(undersample_df))
 
 
-# In[92]:
+# In[91]:
 
 
 # let us train logistic regression with undersamples data
@@ -321,7 +328,7 @@ y_und_pred, y_und_pred_prob = get_predictions(LogisticRegression(C = 0.01, penal
 print_scores(y_und_test,y_und_pred,y_und_pred_prob)
 
 
-# In[ ]:
+# In[92]:
 
 
 # Case-LR-3
@@ -348,7 +355,7 @@ print("precision score: ", precision_score(y_full,y_full_pred))
 # Get predictions for test-dataset (20% of full dataset) from both models.
 # Aim is to compare recall score of Case-NB-4 with Case-LR-4.
 
-# In[ ]:
+# In[26]:
 
 
 drop_list = []
@@ -369,7 +376,7 @@ print("precision score: ", precision_score(y_test,y_p20_pred))
 # <a id='xgboost'></a>
 # ####  Using XGBoost
 
-# In[32]:
+# In[27]:
 
 
 print(df.columns)
@@ -386,7 +393,7 @@ print("train-set size: ", len(trainY),
 print("fraud cases in test-set: ", sum(testY))
 
 
-# In[33]:
+# In[28]:
 
 
 # Long computation in this cell (~1.8 minutes)
@@ -396,7 +403,7 @@ probabilities = clf.fit(trainX, trainY).predict_proba(testX)
 print('AUPRC = {}'.format(average_precision_score(testY,                                               probabilities[:, 1])))
 
 
-# In[34]:
+# In[29]:
 
 
 fig = plt.figure(figsize = (14, 9))
@@ -414,7 +421,7 @@ ax.set_yticklabels(ax.get_yticklabels(), size = 12);
 ax.set_title('Ordering of features by importance to the model learnt', size = 20);
 
 
-# In[35]:
+# In[30]:
 
 
 to_graphviz(clf)
